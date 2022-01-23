@@ -1,31 +1,49 @@
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
+from pymongo import MongoClient
 
-xml = requests.get('https://www.tudogostoso.com.br/sitemap-1.xml').content
-receitas = BeautifulSoup(xml, 'xml')
+connection = MongoClient('localhost', 27017)
+database = connection.cooks
+collection = database.cooking_recipes
+
+xmlReceitas = requests.get('https://www.tudogostoso.com.br/sitemap-1.xml').content
+receitas = BeautifulSoup(xmlReceitas, 'xml')
 
 listaReceitas = receitas.find_all("loc")
+cooker = []
 for receita in listaReceitas:
-    print(receita.get_text())
-
     html = requests.get(receita.get_text()).content
 
     soup = BeautifulSoup(html, 'html.parser')
 
-    # print(soup.prettify())
-
-    titulo = soup.find("span", class_="current")
+    titulo = soup.find("div", class_="recipe-title").find('h1')
 
     print(titulo.get_text())
 
     ingredientes = soup.find_all("span", class_="p-ingredient")
 
-    print('Ingredientes:')
+    # print('Ingredientes:')
+    ingredients = []
     for ingrediente in ingredientes:
-        print(ingrediente.get_text())
+        ingredients.append(ingrediente.get_text().replace("\n", ""))
 
-    print('\n')
-    print('Preparo:')
-    preparos = soup.find_all("div", class_="instructions e-instructions")
-    for preparo in preparos:
-        print(preparo.get_text())
+    # print('\n')
+    # print('Preparo:')
+    instructions = []
+    instrucoes = soup.find("div", class_="instructions e-instructions").find('ol').find_all('li')
+    for preparo in instrucoes:
+        instructions.append(preparo.find('span').get_text().replace("\n", ""))
+
+    # cooker.append({
+    #     "title": titulo,
+    #     "ingredients": ingredients,
+    #     "instructions": instructions
+    # })
+    
+    inserted = collection.insert_one({
+        "title": titulo.get_text().replace("\n", ""),
+        "ingredients": ingredients,
+        "instructions": instructions
+    })
+
+    print(inserted)
