@@ -41,10 +41,10 @@ for i in range(1,99):
         #     "instructions": instructions
         # })
         
-        inserted = collection.insert_one({
-            "title": titulo.get_text().replace("\n", ""),
-            "ingredients": ingredients,
-            "instructions": instructions
-        })
-
-        print(inserted)
+        hasTitle = collection.count_documents({"title": titulo.get_text().replace("\n", "")})
+        if not hasTitle:
+            inserted = collection.insert_one({
+                "title": titulo.get_text().replace("\n", ""),
+                "ingredients": ingredients,
+                "instructions": instructions
+            })
